@@ -1,0 +1,30 @@
+.payment-note {
+  background: #f8f9fa;
+  border-left: 6px solid #28a745;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+}
+
+.payment-note strong {
+  font-size: 16px;
+}
+
+.payment-note p {
+  margin: 8px 0;
+}
+
+.bank-info,
+.pix-info {
+  font-size: 15px;
+}
+
+.pix-key {
+  background: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  display: inline-block;
+  margin-left: 5px;
+}
