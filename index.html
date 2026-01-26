@@ -31,6 +31,9 @@ const meses = [
 function App() {
   const [participantes, setParticipantes] = React.useState([]);
   const [novoNome, setNovoNome] = React.useState("");
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth(); // 0 a 11
+  const diaAtual = hoje.getDate();
 
   React.useEffect(() => {
     carregar();
@@ -81,6 +84,14 @@ function App() {
     return Object.values(p.pagamentos).filter(Boolean).length * valorMensal(p.dias);
   }
 
+  function estaAtrasado(indexMes, pago) {
+    if (pago) return false;
+    if (indexMes < mesAtual) return true;
+    if (indexMes === mesAtual && diaAtual > 10) return true;
+    return false;
+  }
+
+  
   const totalGeral = participantes.reduce((t, p) => t + totalPessoa(p), 0);
 
   return (
@@ -139,20 +150,36 @@ function App() {
                 <td className="text-center font-bold text-green-700">
                   R$ {valorMensal(p.dias)}
                 </td>
+                
+                {meses.map((m, idxMes) => {
+                  const pago = p.pagamentos[m];
+                  const atrasado = estaAtrasado(idxMes, pago);
+                
+                  return (
+                    <td
+                      key={m}
+                      className={`text-center ${
+                        atrasado
+                          ? "bg-red-200"
+                          : pago
+                          ? "bg-green-100"
+                          : ""
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={pago}
+                        onChange={() =>
+                          atualizar(p.id, "pagamentos", {
+                            ...p.pagamentos,
+                            [m]: !pago
+                          })
+                        }
+                      />
+                    </td>
+                  );
+                })}
 
-                {meses.map(m => (
-                  <td key={m} className="text-center">
-                    <input type="checkbox"
-                      checked={p.pagamentos[m]}
-                      onChange={() =>
-                        atualizar(p.id, "pagamentos", {
-                          ...p.pagamentos,
-                          [m]: !p.pagamentos[m]
-                        })
-                      }
-                    />
-                  </td>
-                ))}
 
                 <td className="text-center font-bold">
                   R$ {totalPessoa(p)}
