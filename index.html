@@ -2,14 +2,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Natal da Família 2025</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
-
-<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -31,8 +30,9 @@ const meses = [
 function App() {
   const [participantes, setParticipantes] = React.useState([]);
   const [novoNome, setNovoNome] = React.useState("");
+
   const hoje = new Date();
-  const mesAtual = hoje.getMonth(); // 0 a 11
+  const mesAtual = hoje.getMonth();
   const diaAtual = hoje.getDate();
 
   React.useEffect(() => {
@@ -42,9 +42,13 @@ function App() {
   async function carregar() {
     const { data } = await supabase
       .from("participantes")
-      .select("*")
-      .order("created_at");
-    setParticipantes(data || []);
+      .select("*");
+
+    const ordenados = (data || []).sort((a, b) =>
+      a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })
+    );
+
+    setParticipantes(ordenados);
   }
 
   async function adicionar() {
@@ -54,7 +58,7 @@ function App() {
     meses.forEach(m => pagamentos[m] = false);
 
     await supabase.from("participantes").insert({
-      nome: novoNome,
+      nome: novoNome.trim(),
       dias: 1,
       pagamentos
     });
@@ -64,7 +68,7 @@ function App() {
   }
 
   async function remover(id) {
-    if (!confirm("Remover participante?")) return;
+    if (!confirm("Deseja remover este participante?")) return;
     await supabase.from("participantes").delete().eq("id", id);
     carregar();
   }
@@ -81,7 +85,8 @@ function App() {
   }
 
   function totalPessoa(p) {
-    return Object.values(p.pagamentos).filter(Boolean).length * valorMensal(p.dias);
+    return Object.values(p.pagamentos)
+      .filter(Boolean).length * valorMensal(p.dias);
   }
 
   function estaAtrasado(indexMes, pago) {
@@ -91,14 +96,19 @@ function App() {
     return false;
   }
 
-  
-  const totalGeral = participantes.reduce((t, p) => t + totalPessoa(p), 0);
+  const totalGeral = participantes.reduce(
+    (t, p) => t + totalPessoa(p), 0
+  );
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-4">
+    <div className="max-w-7xl mx-auto p-4">
+      <h1 className="text-3xl font-bold text-center mb-2">
         🎄 Natal da Família 2025
       </h1>
+
+      <p className="text-center text-gray-600 mb-4">
+        👥 Participantes cadastrados: <strong>{participantes.length}</strong>
+      </p>
 
       <div className="flex gap-2 mb-4">
         <input
@@ -107,8 +117,10 @@ function App() {
           value={novoNome}
           onChange={e => setNovoNome(e.target.value)}
         />
-        <button onClick={adicionar}
-          className="bg-green-600 text-white px-4 rounded">
+        <button
+          onClick={adicionar}
+          className="bg-green-600 text-white px-4 rounded hover:bg-green-700"
+        >
           ➕ Adicionar
         </button>
       </div>
@@ -117,7 +129,7 @@ function App() {
         <table className="w-full text-sm">
           <thead className="bg-red-700 text-white">
             <tr>
-              <th className="p-2">Nome</th>
+              <th className="p-2 text-left">Nome</th>
               <th>Dias</th>
               <th>Valor</th>
               {meses.map(m => <th key={m}>{m}</th>)}
@@ -125,9 +137,10 @@ function App() {
               <th></th>
             </tr>
           </thead>
+
           <tbody>
             {participantes.map(p => (
-              <tr key={p.id} className="border-b">
+              <tr key={p.id} className="border-b hover:bg-gray-50">
                 <td className="p-2">
                   <input
                     value={p.nome}
@@ -140,7 +153,7 @@ function App() {
                   <select
                     value={p.dias}
                     onChange={e => atualizar(p.id, "dias", Number(e.target.value))}
-                    className="border rounded"
+                    className="border rounded px-2 py-1"
                   >
                     <option value={1}>1</option>
                     <option value={2}>2</option>
@@ -150,15 +163,16 @@ function App() {
                 <td className="text-center font-bold text-green-700">
                   R$ {valorMensal(p.dias)}
                 </td>
-                
+
                 {meses.map((m, idxMes) => {
                   const pago = p.pagamentos[m];
                   const atrasado = estaAtrasado(idxMes, pago);
-                
+
                   return (
                     <td
                       key={m}
-                      className={`text-center ${
+                      title={atrasado ? "Pagamento atrasado" : ""}
+                      className={`text-center cursor-pointer ${
                         atrasado
                           ? "bg-red-200"
                           : pago
@@ -180,15 +194,14 @@ function App() {
                   );
                 })}
 
-
                 <td className="text-center font-bold">
                   R$ {totalPessoa(p)}
                 </td>
 
-                <td>
+                <td className="text-center">
                   <button
                     onClick={() => remover(p.id)}
-                    className="text-red-600"
+                    className="text-red-600 hover:text-red-800"
                   >
                     🗑️
                   </button>
@@ -200,7 +213,7 @@ function App() {
           <tfoot className="bg-green-700 text-white font-bold">
             <tr>
               <td colSpan={meses.length + 4} className="p-2 text-right">
-                TOTAL:
+                TOTAL GERAL:
               </td>
               <td className="text-center text-lg">
                 R$ {totalGeral}
@@ -208,6 +221,11 @@ function App() {
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <div className="mt-4 text-sm text-gray-600">
+        🔴 Vermelho = pagamento atrasado (após dia 10) <br />
+        🟢 Verde = pagamento realizado
       </div>
     </div>
   );
