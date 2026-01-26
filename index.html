@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body class="bg-gray-100">
@@ -105,6 +106,22 @@ function App() {
       <h1 className="text-3xl font-bold text-center mb-2">
         🎄 Natal da Família 2025
       </h1>
+      
+      <div class="payment-note">
+        <strong>📌 Informação para pagamento</strong>
+        <p>
+          O valor deve ser depositado na conta abaixo:
+        </p>
+      
+        <p class="bank-info">
+          <strong>Conta:</strong> Caixinha Mota
+        </p>
+      
+        <p class="pix-info">
+          <strong>PIX:(Chave Aleatória)</strong>
+          <span class="pix-key">98b0634b-6561-4892-9a06-8d318017b5ad</span>
+        </p>
+      </div>
 
       <p className="text-center text-gray-600 mb-4">
         👥 Participantes cadastrados: <strong>{participantes.length}</strong>
