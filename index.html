@@ -18,9 +18,15 @@
 
 <script type="text/babel">
 
+/* ===== ADMIN POR PARÂMETRO ===== */
+const ADMIN_KEY = "natal2026";
+const params = new URLSearchParams(window.location.search);
+const isAdmin = params.get("admin") === ADMIN_KEY;
+
+/* ===== SUPABASE ===== */
 const supabase = window.supabase.createClient(
   "https://qqhcigffpxouegvlpcqk.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxaGNpZ2ZmcHhvdWVndmxwY3FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzY0ODMsImV4cCI6MjA4NTAxMjQ4M30.8eH2uEnYMKzpQaGBiXRlUf9e_tcQKrih-Kr8SPP6Fjw"
+  "SUA_ANON_KEY_AQUI"
 );
 
 const meses = [
@@ -41,9 +47,7 @@ function App() {
   }, []);
 
   async function carregar() {
-    const { data } = await supabase
-      .from("participantes")
-      .select("*");
+    const { data } = await supabase.from("participantes").select("*");
 
     const ordenados = (data || []).sort((a, b) =>
       a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })
@@ -53,7 +57,7 @@ function App() {
   }
 
   async function adicionar() {
-    if (!novoNome.trim()) return;
+    if (!isAdmin || !novoNome.trim()) return;
 
     const pagamentos = {};
     meses.forEach(m => pagamentos[m] = false);
@@ -69,12 +73,14 @@ function App() {
   }
 
   async function remover(id) {
+    if (!isAdmin) return;
     if (!confirm("Deseja remover este participante?")) return;
     await supabase.from("participantes").delete().eq("id", id);
     carregar();
   }
 
   async function atualizar(id, campo, valor) {
+    if (!isAdmin) return;
     await supabase.from("participantes")
       .update({ [campo]: valor })
       .eq("id", id);
@@ -103,47 +109,37 @@ function App() {
 
   return (
     <div className="max-w-7xl mx-auto p-4">
+
       <h1 className="text-3xl font-bold text-center mb-2">
-        🎄 Natal da Família 2025
+        🎄 Natal da Família 2026
       </h1>
-      
-      <div class="payment-note">
-        <strong>📌 Informação para pagamento</strong>
-        <p>
-          O valor deve ser depositado na conta abaixo:
-        </p>
-      
-        <p class="bank-info">
-          <strong>Agência:</strong> 0001  <br/>
-          <strong>Conta:</strong> 8904939-9  <br/>
-          <strong>Banco:</strong> 0260  <br/>
-          <strong>Nu Pagamentos S.A. - Instituição de Pagamento:</strong>  <br/>
-        </p>
-      
-        <p class="pix-info">
-          <strong>PIX:(Chave Aleatória)</strong>
-          <span class="pix-key">98b0634b-6561-4892-9a06-8d318017b5ad</span>
-        </p>
-      </div>
+
+      {isAdmin && (
+        <div className="bg-red-600 text-white text-center py-2 rounded mb-3 font-bold">
+          🔐 MODO ADMIN ATIVO
+        </div>
+      )}
 
       <p className="text-center text-gray-600 mb-4">
         👥 Participantes cadastrados: <strong>{participantes.length}</strong>
       </p>
 
-      <div className="flex gap-2 mb-4">
-        <input
-          className="border px-3 py-2 flex-1 rounded"
-          placeholder="Nome do participante"
-          value={novoNome}
-          onChange={e => setNovoNome(e.target.value)}
-        />
-        <button
-          onClick={adicionar}
-          className="bg-green-600 text-white px-4 rounded hover:bg-green-700"
-        >
-          ➕ Adicionar
-        </button>
-      </div>
+      {isAdmin && (
+        <div className="flex gap-2 mb-4">
+          <input
+            className="border px-3 py-2 flex-1 rounded"
+            placeholder="Nome do participante"
+            value={novoNome}
+            onChange={e => setNovoNome(e.target.value)}
+          />
+          <button
+            onClick={adicionar}
+            className="bg-green-600 text-white px-4 rounded hover:bg-green-700"
+          >
+            ➕ Adicionar
+          </button>
+        </div>
+      )}
 
       <div className="overflow-x-auto bg-white rounded shadow">
         <table className="w-full text-sm">
@@ -154,26 +150,33 @@ function App() {
               <th>Valor</th>
               {meses.map(m => <th key={m}>{m}</th>)}
               <th>Total</th>
-              <th></th>
+              {isAdmin && <th></th>}
             </tr>
           </thead>
 
           <tbody>
             {participantes.map(p => (
               <tr key={p.id} className="border-b hover:bg-gray-50">
+
                 <td className="p-2">
                   <input
                     value={p.nome}
+                    disabled={!isAdmin}
                     onChange={e => atualizar(p.id, "nome", e.target.value)}
-                    className="border px-2 py-1 rounded w-full"
+                    className={`border px-2 py-1 rounded w-full ${
+                      !isAdmin && "bg-gray-100 cursor-not-allowed"
+                    }`}
                   />
                 </td>
 
                 <td className="text-center">
                   <select
                     value={p.dias}
+                    disabled={!isAdmin}
                     onChange={e => atualizar(p.id, "dias", Number(e.target.value))}
-                    className="border rounded px-2 py-1"
+                    className={`border rounded px-2 py-1 ${
+                      !isAdmin && "bg-gray-100 cursor-not-allowed"
+                    }`}
                   >
                     <option value={1}>1</option>
                     <option value={2}>2</option>
@@ -192,16 +195,13 @@ function App() {
                     <td
                       key={m}
                       title={atrasado ? "Pagamento atrasado" : ""}
-                      className={`text-center cursor-pointer ${
-                        atrasado
-                          ? "bg-red-200"
-                          : pago
-                          ? "bg-green-100"
-                          : ""
+                      className={`text-center ${
+                        atrasado ? "bg-red-200" : pago ? "bg-green-100" : ""
                       }`}
                     >
                       <input
                         type="checkbox"
+                        disabled={!isAdmin}
                         checked={pago}
                         onChange={() =>
                           atualizar(p.id, "pagamentos", {
@@ -218,21 +218,23 @@ function App() {
                   R$ {totalPessoa(p)}
                 </td>
 
-                <td className="text-center">
-                  <button
-                    onClick={() => remover(p.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    🗑️
-                  </button>
-                </td>
+                {isAdmin && (
+                  <td className="text-center">
+                    <button
+                      onClick={() => remover(p.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
 
           <tfoot className="bg-green-700 text-white font-bold">
             <tr>
-              <td colSpan={meses.length + 4} className="p-2 text-right">
+              <td colSpan={meses.length + (isAdmin ? 4 : 3)} className="p-2 text-right">
                 TOTAL GERAL:
               </td>
               <td className="text-center text-lg">
@@ -243,10 +245,6 @@ function App() {
         </table>
       </div>
 
-      <div className="mt-4 text-sm text-gray-600">
-        🔴 Vermelho = pagamento atrasado (após dia 10) <br />
-        🟢 Verde = pagamento realizado
-      </div>
     </div>
   );
 }
