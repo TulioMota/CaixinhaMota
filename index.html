@@ -113,6 +113,29 @@ function App() {
       <h1 className="text-3xl font-bold text-center mb-2">
         🎄 Natal da Família 2026
       </h1>
+      
+        <div class="payment-note">
+        <strong>📌 Informação para pagamento</strong>
+        <p>
+          O valor deve ser depositado na conta abaixo:
+        </p>
+      
+        <p class="bank-info">
+          <strong>Agência:</strong> 0001  <br/>
+          <strong>Conta:</strong> 8904939-9  <br/>
+          <strong>Banco:</strong> 0260  <br/>
+          <strong>Nu Pagamentos S.A. - Instituição de Pagamento:</strong>  <br/>
+        </p>
+      
+        <p class="pix-info">
+          <strong>PIX:(Chave Aleatória)</strong>
+          <span class="pix-key">98b0634b-6561-4892-9a06-8d318017b5ad</span>
+        </p>
+      </div>
+
+      <p className="text-center text-gray-600 mb-4">
+        👥 Participantes cadastrados: <strong>{participantes.length}</strong>
+      </p>
 
       {isAdmin && (
         <div className="bg-red-600 text-white text-center py-2 rounded mb-3 font-bold">
