@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Arrecadação - Natal da Família 2025</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const ControleNatalFamilia = () => {
+            const participantes = [
+                "Thaina", "Maisa", "Lia", "Euler", "Thaís", "Álvaro", "Kele", "William",
+                "Karen", "Nikolas", "Elane", "Eric", "Euder", "Rita", "Julia", "Túlio",
+                "Nicolas", "Letícia", "Beth", "Edilene"
+            ];
+
+            const meses = [
+                "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+            ];
+
+            const [dados, setDados] = useState(() => {
+                const dadosSalvos = localStorage.getItem('controleNatalFamilia');
+                if (dadosSalvos) {
+                    return JSON.parse(dadosSalvos);
+                }
+                
+                const dadosIniciais = {};
+                participantes.forEach(nome => {
+                    dadosIniciais[nome] = {
+                        dias: 1,
+                        pagamentos: {}
+                    };
+                    meses.forEach(mes => {
+                        dadosIniciais[nome].pagamentos[mes] = false;
+                    });
+                });
+                return dadosIniciais;
+            });
+
+            const [mostrarModal, setMostrarModal] = useState(false);
+            const [textoExportar, setTextoExportar] = useState('');
+            const [dataAtual] = useState(new Date());
+            const mesAtual = dataAtual.getMonth();
+            const diaAtual = dataAtual.getDate();
+
+            useEffect(() => {
+                localStorage.setItem('controleNatalFamilia', JSON.stringify(dados));
+            }, [dados]);
+
+            const alterarDias = (nome, dias) => {
+                setDados(prev => ({
+                    ...prev,
+                    [nome]: { ...prev[nome], dias: parseInt(dias) }
+                }));
+            };
+
+            const alterarPagamento = (nome, mes) => {
+                setDados(prev => ({
+                    ...prev,
+                    [nome]: {
+                        ...prev[nome],
+                        pagamentos: {
+                            ...prev[nome].pagamentos,
+                            [mes]: !prev[nome].pagamentos[mes]
+                        }
+                    }
+                }));
+            };
+
+            const verificarAtraso = (indexMes) => {
+                if (indexMes < mesAtual) return true;
+                if (indexMes === mesAtual && diaAtual > 10) return true;
+                return false;
+            };
+
+            const calcularValorMensal = (dias) => dias === 1 ? 10 : 20;
+
+            const calcularTotalPessoa = (nome) => {
+                const valorMensal = calcularValorMensal(dados[nome].dias);
+                const mesesPagos = Object.values(dados[nome].pagamentos).filter(Boolean).length;
+                return mesesPagos * valorMensal;
+            };
+
+            const calcularTotalGeral = () => {
+                return participantes.reduce((total, nome) => total + calcularTotalPessoa(nome), 0);
+            };
+
+            const calcularPendente = () => {
+                let pendente = 0;
+                participantes.forEach(nome => {
+                    const valorMensal = calcularValorMensal(dados[nome].dias);
+                    meses.forEach((mes, idx) => {
+                        if (!dados[nome].pagamentos[mes] && verificarAtraso(idx)) {
+                            pendente += valorMensal;
+                        }
+                    });
+                });
+                return pendente;
+            };
+
+            const exportarCSV = () => {
+                let dados_excel = 'Nome\tDias\tValor Mensal\t' + meses.join('\t') + '\tTotal Pago\n';
+                
+                participantes.forEach(nome => {
+                    const dias = dados[nome].dias;
+                    const valorMensal = calcularValorMensal(dias);
+                    const pagamentos = meses.map(mes => dados[nome].pagamentos[mes] ? 'SIM' : 'NÃO').join('\t');
+                    const total = calcularTotalPessoa(nome);
+                    dados_excel += `${nome}\t${dias}\tR$ ${valorMensal}\t${pagamentos}\tR$ ${total}\n`;
+                });
+
+                setTextoExportar(dados_excel);
+                setMostrarModal(true);
+            };
+
+            const copiarTexto = () => {
+                navigator.clipboard.writeText(textoExportar).then(() => {
+                    alert('✅ Copiado! Cole no Excel (Ctrl+V na célula A1)');
+                }).catch(() => {
+                    alert('Selecione todo o texto abaixo e copie manualmente (Ctrl+A e depois Ctrl+C)');
+                });
+            };
+
+            const limparDados = () => {
+                if (confirm('⚠️ Tem certeza que deseja limpar TODOS os dados? Esta ação não pode ser desfeita!')) {
+                    localStorage.removeItem('controleNatalFamilia');
+                    window.location.reload();
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-red-50 to-green-50 p-4">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
+                            <h1 className="text-3xl font-bold text-center text-red-700 mb-2">
+                                🎄 Controle de Arrecadação - Natal da Família 2025 🎅
+                            </h1>
+                            <p className="text-center text-gray-600 mb-4">
+                                Prazo de pagamento: até dia 10 de cada mês
+                            </p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div className="bg-green-100 p-4 rounded-lg text-center">
+                                    <p className="text-sm text-gray-600">Total Arrecadado</p>
+                                    <p className="text-2xl font-bold text-green-700">R$ {calcularTotalGeral().toFixed(2)}</p>
+                                </div>
+                                <div className="bg-red-100 p-4 rounded-lg text-center">
+                                    <p className="text-sm text-gray-600">Pagamentos Pendentes</p>
+                                    <p className="text-2xl font-bold text-red-700">R$ {calcularPendente().toFixed(2)}</p>
+                                </div>
+                                <div className="bg-blue-100 p-4 rounded-lg text-center">
+                                    <p className="text-sm text-gray-600">Participantes</p>
+                                    <p className="text-2xl font-bold text-blue-700">{participantes.length}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 flex-wrap justify-center">
+                                <button
+                                    onClick={exportarCSV}
+                                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+                                >
+                                    📥 Exportar para Excel
+                                </button>
+                                <button
+                                    onClick={limparDados}
+                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2"
+                                >
+                                    🗑️ Limpar Todos os Dados
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-xl overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-red-700 text-white">
+                                        <th className="p-3 text-left sticky left-0 bg-red-700 z-10">Nome</th>
+                                        <th className="p-3 text-center">Dias</th>
+                                        <th className="p-3 text-center">Valor/Mês</th>
+                                        {meses.map((mes, idx) => (
+                                            <th key={mes} className="p-3 text-center min-w-[80px]">
+                                                {mes}
+                                                {idx === mesAtual && <div className="text-xs text-yellow-300">atual</div>}
+                                            </th>
+                                        ))}
+                                        <th className="p-3 text-center bg-green-700">Total Pago</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {participantes.map((nome, idxNome) => (
+                                        <tr
+                                            key={nome}
+                                            className={`border-b hover:bg-gray-50 ${idxNome % 2 === 0 ? 'bg-gray-50' : ''}`}
+                                        >
+                                            <td className="p-3 font-medium sticky left-0 bg-white z-10">{nome}</td>
+                                            <td className="p-3 text-center">
+                                                <select
+                                                    value={dados[nome].dias}
+                                                    onChange={(e) => alterarDias(nome, e.target.value)}
+                                                    className="border rounded px-2 py-1 text-center"
+                                                >
+                                                    <option value="1">1 dia</option>
+                                                    <option value="2">2 dias</option>
+                                                </select>
+                                            </td>
+                                            <td className="p-3 text-center font-semibold text-green-700">
+                                                R$ {calcularValorMensal(dados[nome].dias)}
+                                            </td>
+                                            {meses.map((mes, idxMes) => {
+                                                const pago = dados[nome].pagamentos[mes];
+                                                const atrasado = !pago && verificarAtraso(idxMes);
+                                                return (
+                                                    <td
+                                                        key={mes}
+                                                        className={`p-3 text-center ${
+                                                            atrasado ? 'bg-red-200' : pago ? 'bg-green-100' : ''
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={pago}
+                                                            onChange={() => alterarPagamento(nome, mes)}
+                                                            className="w-5 h-5 cursor-pointer"
+                                                        />
+                                                    </td>
+                                                );
+                                            })}
+                                            <td className="p-3 text-center font-bold text-green-700 bg-green-50">
+                                                R$ {calcularTotalPessoa(nome).toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot>
+                                    <tr className="bg-green-700 text-white font-bold">
+                                        <td colSpan="3" className="p-3 text-right">TOTAL GERAL:</td>
+                                        <td colSpan={meses.length + 1} className="p-3 text-center text-xl">
+                                            R$ {calcularTotalGeral().toFixed(2)}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div className="mt-6 bg-white rounded-lg shadow-xl p-4">
+                            <h3 className="font-bold text-lg mb-2 text-gray-700">📋 Legenda:</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 bg-green-100 border"></div>
+                                    <span>Pago</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 bg-red-200 border"></div>
+                                    <span>Atrasado (após dia 10)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 bg-white border"></div>
+                                    <span>Aguardando pagamento</span>
+                                </div>
+                            </div>
+                            <p className="mt-4 text-sm text-gray-600">
+                                💡 <strong>Como usar:</strong> Selecione quantos dias cada pessoa vai participar (1 ou 2 dias) e marque os meses pagos. 
+                                As linhas ficam vermelhas automaticamente quando o pagamento está atrasado (após dia 10 do mês).
+                            </p>
+                            <p className="mt-2 text-sm text-green-600 font-semibold">
+                                ✅ <strong>Dados salvos automaticamente!</strong> Suas marcações ficam salvas no navegador.
+                            </p>
+                        </div>
+                    </div>
+
+                    {mostrarModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                                <div className="bg-red-700 text-white p-4 flex justify-between items-center">
+                                    <h2 className="text-xl font-bold">📋 Copiar Dados para Excel</h2>
+                                    <button
+                                        onClick={() => setMostrarModal(false)}
+                                        className="text-white hover:bg-red-800 rounded px-3 py-1"
+                                    >
+                                        ✕ Fechar
+                                    </button>
+                                </div>
+                                <div className="p-6">
+                                    <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                                        <p className="font-bold mb-2">📝 Instruções:</p>
+                                        <ol className="list-decimal ml-5 space-y-1 text-sm">
+                                            <li>Clique no botão "Copiar Texto" abaixo</li>
+                                            <li>Abra o Microsoft Excel</li>
+                                            <li>Clique na célula <strong>A1</strong></li>
+                                            <li>Cole com <strong>Ctrl+V</strong></li>
+                                            <li>Os dados serão organizados em colunas automaticamente!</li>
+                                        </ol>
+                                    </div>
+                                    
+                                    <button
+                                        onClick={copiarTexto}
+                                        className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-bold mb-4"
+                                    >
+                                        📋 Copiar Texto
+                                    </button>
+
+                                    <div className="bg-gray-50 p-4 rounded border overflow-auto max-h-96">
+                                        <pre className="text-xs whitespace-pre font-mono">{textoExportar}</pre>
+                                    </div>
+                                    
+                                    <p className="mt-4 text-sm text-gray-600">
+                                        💡 <strong>Alternativa:</strong> Selecione todo o texto acima (Ctrl+A), copie (Ctrl+C) e cole no Excel.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<ControleNatalFamilia />, document.getElementById('root'));
+    </script>
+</body>
+</html>
