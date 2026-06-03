@@ -14,8 +14,8 @@ jobs:
     steps:
       - name: Ping Supabase
         env:
-          SUPABASE_URL:      ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_URL:     "https://qqhcigffpxouegvlpcqk.supabase.co"
+          SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxaGNpZ2ZmcHhvdWVndmxwY3FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzY0ODMsImV4cCI6MjA4NTAxMjQ4M30.8eH2uEnYMKzpQaGBiXRlUf9e_tcQKrih-Kr8SPP6Fjw"
         run: |
           echo "Enviando ping para o Supabase..."
 
